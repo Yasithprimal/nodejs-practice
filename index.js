@@ -1,93 +1,79 @@
-import { log } from "node:console";
-// import { appendFile, readFile, rm, writeFile } from "node:fs";
-import { dirname, join } from "node:path";
-import { encode } from "node:punycode";
-import { fileURLToPath } from "node:url";
-import { appendFile, readFile, writeFile, rmdir } from "node:fs/promises";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cardGen } from "./lib/htmlCardGen.js";
 import fileRead from "./lib/readfile.js";
 import fileWrite from "./lib/writefile.js";
+import { log } from "console";
+// import { prompt } from "inquirer";
+import inquirer from "inquirer";
+// import { type } from "os";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const studentInfo = [];
 
-fileRead("read.txt", (data) => {
-  const whatToDo = String(data).split(" ");
-  const command = whatToDo[0];
-  const content = whatToDo.slice(1, whatToDo.length - 1).join(" ");
-  const file = whatToDo[whatToDo.length - 1];
-  // log(whatToDo);
+(async () => {
+  let allCard = "";
 
-  if (command === "write") {
-    fileWrite(file, content, (d) => log(d));
-  }
-});
+  do {
+    const data = await inquirer.prompt([
+      {
+        type: "input",
+        name: "name",
+        message: "enter student name",
+      },
+      {
+        type: "number",
+        name: "age",
+        message: "enter student age",
+      },
+      {
+        type: "input",
+        name: "city",
+        message: "enter student city",
+      },
+      {
+        type: "list",
+        name: "stuclass",
+        message: "enter student class",
+        choices: ["class 1", "class 2", "class 3", "class 4"],
+      },
+      {
+        type: "checkbox",
+        name: "subject",
+        message: "enter student subject",
+        choices: ["java", "javascript", "python", "golang", "dart"],
+      },
+      {
+        type: "confirm",
+        name: "check",
+        message: "Have more students",
+      },
+    ]);
 
-///sync API///
+    const { check, ...info } = data;
+    studentInfo.push(info);
+    if (!data.check) {
+      break;
+    }
+  } while (true);
 
-// rmSync(join(__dirname, "write.js"));
+  studentInfo.forEach(({ name, age, stuclass, subject }) => {
+    allCard += cardGen(name, age, stuclass, subject);
+  });
 
-// writeFileSync(
-//   join(__dirname, "write.js"),
-//   `
-// const c = 'andrew'`
-// );
-
-// const data = readFileSync(join(__dirname, "write.js"), {
-//   encoding: "utf-8",
-// });
-// log(data);
-
-///promise API///
-
-// readFile(join(__dirname, "read.txt"), {
-//   encoding: "utf-8",
-// })
-//   .then((data) => log(data))
-//   .catch((err) => log(err));
-
-// const writeFun = async (data) => {
-//   try {
-//     const res = await writeFile(join(__dirname, "write.js"), data, {
-//       encoding: "utf-8",
-//     });
-//     log(res);
-//   } catch (error) {
-//     log(error);
-//   }
-// };
-// writeFun(`const a = 'yasith';
-//   console.log(a)`);
-
-///callback API///
-
-// readFile(join(__dirname, "read.txt"), { encoding: "utf-8" }, (err, data) => {
-//   if (!err) {
-//     log(data);
-//   } else {
-//     log(err);
-//   }
-// });
-
-// writeFile(join(__dirname, "write.txt"), "I am learning node.js", (err) => {
-//   if (err) {
-//     log(err);
-//   }
-// });
-
-// appendFile(
-//   join(__dirname, "write.js"),
-//   `
-// const a = 'yasith';
-// const c = [1,2,3,4,5];
-
-// console.log(a);
-// console.log(c[2]);`,
-//   (err) => {
-//     if (!err) {
-//       log("message overwritten");
-//     }
-//   }
-// );
-
-// rm(join(__dirname, "write.txt"), (err) => !err && log("file is deleted"));
+  log(allCard);
+  const htmlContent = `
+  <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student info</title>
+  </head>
+  <link rel="stylesheet" href="./index.css" />
+  <body>
+    <main class="main">
+    ${allCard}
+    </main>
+  </body>
+</html>
+`;
+  fileWrite("index.html", htmlContent, (d) => log(d));
+})();
